@@ -1,0 +1,96 @@
+package com.facebook.samples.litho.playground;
+
+import android.graphics.Color;
+import android.view.View;
+import com.facebook.litho.ClickEvent;
+import com.facebook.litho.Column;
+import com.facebook.litho.Component;
+import com.facebook.litho.ComponentContext;
+import com.facebook.litho.Row;
+import com.facebook.litho.StateValue;
+import com.facebook.litho.annotations.FromEvent;
+import com.facebook.litho.annotations.LayoutSpec;
+import com.facebook.litho.annotations.OnCreateInitialState;
+import com.facebook.litho.annotations.OnCreateLayout;
+import com.facebook.litho.annotations.OnEvent;
+import com.facebook.litho.annotations.OnUpdateState;
+import com.facebook.litho.annotations.Prop;
+import com.facebook.litho.annotations.State;
+import com.facebook.litho.widget.SolidColor;
+import com.facebook.litho.widget.Text;
+import com.facebook.samples.litho.hscroll.Parent;
+import com.facebook.yoga.YogaEdge;
+
+/* Expands and collapses a component based on click. With parent counter state update, the layout is re-rendered*/
+
+@LayoutSpec
+public class PlaygroundComponentSpec {
+
+  @OnCreateInitialState
+  static void onCreateInitialState(ComponentContext c, StateValue<Integer> parentCounter) {
+    parentCounter.set(0);
+  }
+
+  @OnCreateLayout
+  static Component onCreateLayout(
+      ComponentContext c,
+      @Prop(optional = true) ComponentContext stateCtx,
+      @State int parentCounter) {
+    return createExpandCollapse(c, parentCounter);
+  }
+
+  private static Component createExpandCollapse(ComponentContext c, int parentCounter) {
+    int color = 0;
+    if (parentCounter % 2 == 0) {
+      color = Color.GREEN;
+    } else {
+      color = Color.BLACK;
+    }
+
+    Column.Builder builder = Column.create(c);
+    builder.child(
+        Row.create(c)
+            .child(Text.create(c).text("Welcome to expand collapse component").textSizeSp(30)));
+
+    builder.child(
+        Row.create(c)
+            .marginDip(YogaEdge.ALL, 20)
+            .focusable(true)
+            .child(SolidColor.create(c).color(color).widthDip(40).heightDip(40))
+            .child(Text.create(c).text("1st Child").textSizeSp(30)));
+
+    if (parentCounter % 2 == 1) {
+      builder.child(
+          Row.create(c)
+              .focusable(true)
+              .child(Text.create(c).text("Newly added child").textSizeSp(30)));
+    }
+
+    builder.child(
+        Row.create(c)
+            .marginDip(YogaEdge.ALL, 20)
+            .focusable(true)
+            .clickHandler(Parent.onTextClick(c))
+            .child(SolidColor.create(c).color(color).widthDip(40).heightDip(40))
+            .child(
+                Text.create(c)
+                    .text(
+                        (parentCounter % 2 == 0)
+                            ? "Click here to expand"
+                            : "Click here to collapse")
+                    .textSizeSp(30)));
+
+    return builder.build();
+  }
+
+  @OnEvent(ClickEvent.class)
+  static void onTextClick(ComponentContext c, @FromEvent View view) {
+    PlaygroundComponent.updateParentCounterAsync(c);
+  }
+
+  @OnUpdateState
+  static void updateParentCounter(StateValue<Integer> parentCounter) {
+    Integer val = parentCounter.get();
+    parentCounter.set((val == null ? 0 : val) + 1);
+  }
+}
